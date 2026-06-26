@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_PRO_MODEL = "gemini-1.5-pro"
 EDGE_MIN = 0.03
 BEST_THIRD_POINTS = 4
 

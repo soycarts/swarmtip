@@ -2,8 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.db import client
 import re
+from datetime import datetime
 
 app = FastAPI()
+
+def to_utc_iso(dt: datetime) -> str:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.isoformat() + "Z"
+    return dt.isoformat()
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,9 +90,9 @@ def get_tasks(page: int = 1, limit: int = 10, resolver: str = None):
             "title": d["title"],
             "created_by": d.get("created_by") or "unknown",
             "resolved_by": d.get("resolved_by") if d.get("resolved_by") else None,
-            "created_at": d["created_at"].isoformat() if d.get("created_at") else None,
-            "resolved_at": resolved_at_val.isoformat() if resolved_at_val else None,
-            "updated_at": d["updated_at"].isoformat() if d.get("updated_at") else None
+            "created_at": to_utc_iso(d.get("created_at")),
+            "resolved_at": to_utc_iso(resolved_at_val),
+            "updated_at": to_utc_iso(d.get("updated_at"))
         })
         
     return {
