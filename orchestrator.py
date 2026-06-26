@@ -33,16 +33,84 @@ ACTORS = {
     "publish": "publisher",
 }
 
+async def check_and_trigger_fixtures():
+    """
+    Dual-frequency triggering mechanism:
+    - Pre-match (scheduled): Checks once per hour.
+    - In-play (live): Checks regularly (every minute via the Modal cron heartbeat).
+    """
+    print("Checking fixtures for scheduled (hourly) and live (regular) assessments...")
+    try:
+        ch = client()
+        fixtures = [dict(zip(["fixture_id", "group_id", "home_team", "away_team", "status"], r))
+                    for r in ch.query("SELECT fixture_id, group_id, home_team, away_team, status FROM fixtures").result_rows]
+        current_tasks = core.tasks.current()
+        import datetime
+        now = datetime.datetime.utcnow()
+
+        for fixture in fixtures:
+            fx_id = fixture["fixture_id"]
+            status = fixture["status"]
+            
+            fx_assess = [t for t in current_tasks if t["fixture_id"] == fx_id and t["task_type"] == "assess"]
+            active_fx_tasks = [t for t in current_tasks if t["fixture_id"] == fx_id and t["status"] not in ("completed", "failed", "cancelled")]
+            
+            if fx_assess:
+                last_assess_time = max(t["updated_at"] for t in fx_assess)
+                if last_assess_time.tzinfo is not None:
+                    last_assess_time = last_assess_time.replace(tzinfo=None)
+                seconds_since_last = (now - last_assess_time).total_seconds()
+            else:
+                seconds_since_last = 999999.0
+
+            if status == "live":
+                # Regular live checks: if there is no active task chain for this fixture,
+                # and it's been more than 60 seconds since the last check, trigger a new one.
+                if not active_fx_tasks and seconds_since_last > 60.0:
+                    print(f"[Orchestrator] Triggering regular live assessment for {fx_id}")
+                    core.tasks.create(
+                        kind="agent",
+                        task_type="assess",
+                        fixture_id=fx_id,
+                        actor="orchestrator",
+                        assignee="orchestrator",
+                        title=f"Live in-play assess for {fx_id}",
+                        payload={"minute": 0, "score": "0-0", "other_scores": {}}
+                    )
+            elif status == "scheduled":
+                # Pre-match hourly assessments aligned to run at XX:45 each hour
+                target_45 = now.replace(minute=45, second=0, microsecond=0)
+                if now.minute < 45:
+                    target_45 = target_45 - datetime.timedelta(hours=1)
+                
+                if not active_fx_tasks and last_assess_time < target_45:
+                    print(f"[Orchestrator] Triggering pre-match hourly assessment for {fx_id} (target XX:45)")
+                    core.tasks.create(
+                        kind="agent",
+                        task_type="assess",
+                        fixture_id=fx_id,
+                        actor="orchestrator",
+                        assignee="orchestrator",
+                        title=f"Hourly pre-match assess for {fx_id}",
+                        payload={"minute": 0, "score": "0-0", "other_scores": {}}
+                    )
+    except Exception as e:
+        print(f"Error in check_and_trigger_fixtures: {e}")
+
 async def run_loop():
     print("Orchestrator loop started.")
+    
+    # 1. Trigger any necessary assessments based on match status and timing
+    await check_and_trigger_fixtures()
 
+    # 2. Main processing loop
     while True:
         claimable = core.tasks.claimable("agent")
         if not claimable:
             current = core.tasks.current()
-            agent_tasks = [t for t in current if t["kind"] == "agent" and t["task_type"] != "assess"]
-            if agent_tasks and all(t["status"] in ("completed", "failed") for t in agent_tasks):
-                print("All tasks completed.")
+            active_agent_tasks = [t for t in current if t["kind"] == "agent" and t["status"] not in ("completed", "failed", "cancelled")]
+            if not active_agent_tasks:
+                print("No active agent tasks. Exiting orchestrator loop gracefully.")
                 break
             await asyncio.sleep(1)
             continue

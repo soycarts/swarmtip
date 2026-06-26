@@ -29,7 +29,11 @@ export default function SwarmBoard() {
   const formatTime = (isoString) => {
     if (!isoString) return '';
     try {
-      const date = new Date(isoString);
+      // If the string lacks a timezone offset, append 'Z' to parse it as UTC
+      const normalized = (isoString.endsWith('Z') || isoString.includes('+') || (isoString.includes('-') && isoString.lastIndexOf('-') > 7)) 
+        ? isoString 
+        : `${isoString}Z`;
+      const date = new Date(normalized);
       const hours = date.getHours().toString().padStart(2, '0');
       const minutes = date.getMinutes().toString().padStart(2, '0');
       const seconds = date.getSeconds().toString().padStart(2, '0');
