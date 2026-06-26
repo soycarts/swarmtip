@@ -20,18 +20,16 @@ import json
 import clickhouse_connect          # pip install clickhouse-connect
 from tavily import TavilyClient    # pip install tavily-python
 from google import genai           # pip install google-genai
+import config
+from core.db import client
 
 # --- config ---------------------------------------------------------------
-GEMINI_MODEL = "gemini-3.5-flash"  # confirm exact string against current SDK docs
-BEST_THIRD_POINTS = 4              # historical heuristic; Prometheux does this properly
+GEMINI_MODEL = config.GEMINI_MODEL
+BEST_THIRD_POINTS = config.BEST_THIRD_POINTS
 
-ch = clickhouse_connect.get_client(
-    host=os.environ["CLICKHOUSE_HOST"],
-    username=os.environ.get("CLICKHOUSE_USER", "default"),
-    password=os.environ.get("CLICKHOUSE_PASSWORD", ""),
-)
-tavily = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
-gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+ch = client()
+tavily = TavilyClient(api_key=config.TAVILY_API_KEY)
+gemini = genai.Client(api_key=config.GEMINI_API_KEY)
 
 
 # --- 1. ground ------------------------------------------------------------
@@ -54,37 +52,8 @@ def ground_fixture(fixture: dict) -> list[dict]:
     return sources
 
 
-# --- 2. qualify (Prometheux replaces this; fallback keeps the spine alive) -
-def derive_qualification(fixture: dict) -> dict:
-    """
-    Coarse Python stand-in for the Prometheux ontology.
-    For each team: projected points on a draw, and whether that likely
-    qualifies. Prometheux replaces this with proper cross-group ranking
-    (top-2 logic + best-third comparison on points/GD/goals) AND lineage.
-    """
-    out = {}
-    rows = ch.query(
-        "SELECT team, points FROM standings WHERE group_id = %(g)s",
-        parameters={"g": fixture["group_id"]},
-    ).result_rows
-    pts = {team: p for team, p in rows}
+from core.qualification import derive_qualification
 
-    for team in (fixture["home_team"], fixture["away_team"]):
-        draw_points = pts.get(team, 0) + 1
-        if draw_points >= BEST_THIRD_POINTS:
-            sufficient, path = 1, "best_third"
-            reason = f"{draw_points} pts on a draw clears the ~{BEST_THIRD_POINTS}-pt third-place bar."
-        else:
-            sufficient, path = 0, "none"
-            reason = f"{draw_points} pts on a draw is below the third-place bar; needs a win."
-        out[team] = {"draw_points": draw_points, "draw_sufficient": sufficient,
-                     "path": path, "reasoning": reason}
-        ch.insert("qualification_signals",
-                  [[fixture["fixture_id"], team, draw_points, sufficient,
-                    path, reason, "fallback"]],
-                  column_names=["fixture_id", "team", "draw_points",
-                                "draw_sufficient", "path", "reasoning", "source"])
-    return out
 
 
 def classify_match(qual: dict, home: str, away: str) -> str:

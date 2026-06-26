@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import SwarmBoard from './components/SwarmBoard';
 import ResultsTable from './components/ResultsTable';
+import OddsComparison from './components/OddsComparison';
 import LiveStandings from './components/LiveStandings';
 import ProjectedR32 from './components/ProjectedR32';
 import ToplineSummary from './components/ToplineSummary';
@@ -54,6 +55,7 @@ function App() {
       <div className="grid">
         <div>
           <ResultsTable />
+          <OddsComparison />
           <LiveStandings />
           <ProjectedR32 />
           <TavilyNewsFeed />

@@ -13,6 +13,7 @@ const formatKickoff = (isoString) => {
 
 export default function ResultsTable() {
   const [matches, setMatches] = useState([]);
+  const [showTipsOnly, setShowTipsOnly] = useState(false);
 
   const fetchMatches = async () => {
     try {
@@ -30,25 +31,67 @@ export default function ResultsTable() {
     return () => clearInterval(interval);
   }, []);
 
+  const filteredMatches = showTipsOnly 
+    ? matches.filter(m => m.recommendation === 'BET_DRAW') 
+    : matches;
+
   return (
     <div className="panel" style={{ position: 'relative', overflow: 'hidden' }}>
-      <h2>
-        <span>Live Match Results</span>
-        <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--muted)', fontWeight: 'normal' }}>
-          dynamic overlay
-        </span>
-      </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
-        {matches.map(m => {
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+        <h2 style={{ margin: 0 }}>
+          <span>Live Match Results</span>
+          <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--muted)', fontWeight: 'normal', marginLeft: '6px' }}>
+            dynamic overlay
+          </span>
+        </h2>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button 
+            onClick={() => setShowTipsOnly(false)}
+            style={{
+              background: !showTipsOnly ? 'rgba(56, 189, 248, 0.15)' : 'rgba(30, 41, 59, 0.4)',
+              color: !showTipsOnly ? 'rgb(56, 189, 248)' : 'var(--muted)',
+              border: !showTipsOnly ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid var(--border)',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            All Matches
+          </button>
+          <button 
+            onClick={() => setShowTipsOnly(true)}
+            style={{
+              background: showTipsOnly ? 'rgba(251, 146, 60, 0.15)' : 'rgba(30, 41, 59, 0.4)',
+              color: showTipsOnly ? 'var(--cursor)' : 'var(--muted)',
+              border: showTipsOnly ? '1px solid rgba(251, 146, 60, 0.3)' : '1px solid var(--border)',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            🔥 Draw Tips
+          </button>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {filteredMatches.map(m => {
           const isLive = m.status === 'live';
           const isFinished = m.status === 'finished';
+          const isBetDraw = m.recommendation === 'BET_DRAW' && !isFinished;
+          
           return (
             <div 
               key={m.fixture_id} 
               style={{
-                background: 'rgba(30, 41, 59, 0.4)',
-                border: isLive ? '1.5px solid var(--accent)' : '1px solid var(--border)',
-                boxShadow: isLive ? '0 0 15px rgba(57, 255, 20, 0.15)' : 'none',
+                background: isBetDraw ? 'rgba(251, 146, 60, 0.03)' : 'rgba(30, 41, 59, 0.4)',
+                border: isLive ? '1.5px solid var(--accent)' : isBetDraw ? '1.5px solid var(--cursor)' : '1px solid var(--border)',
+                boxShadow: isLive ? '0 0 15px rgba(57, 255, 20, 0.15)' : isBetDraw ? '0 0 15px rgba(251, 146, 60, 0.12)' : 'none',
                 borderRadius: '8px',
                 padding: '14px 16px',
                 display: 'flex',
@@ -58,8 +101,29 @@ export default function ResultsTable() {
               }}
             >
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.8px' }}>
-                  World Cup 2026 · Group {m.group_id}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.8px' }}>
+                    World Cup 2026 · Group {m.group_id}
+                  </span>
+                  {isBetDraw && (
+                    <span style={{
+                      background: 'rgba(251, 146, 60, 0.12)',
+                      color: 'var(--cursor)',
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      border: '1px solid rgba(251, 146, 60, 0.25)',
+                      boxShadow: '0 0 10px rgba(251, 146, 60, 0.05)'
+                    }}>
+                      🔥 DRAW VALUE ({m.edge > 0 ? '+' : ''}{(m.edge * 100).toFixed(0)}% EDGE)
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '14px' }}>{m.home_team}</span>
@@ -138,9 +202,9 @@ export default function ResultsTable() {
             </div>
           );
         })}
-        {matches.length === 0 && (
-          <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '16px', fontSize: '13px' }}>
-            No matches scheduled or in-play.
+        {filteredMatches.length === 0 && (
+          <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '24px 16px', fontSize: '13px' }}>
+            {showTipsOnly ? "No draw value recommendations found." : "No matches scheduled or in-play."}
           </div>
         )}
       </div>
