@@ -1,0 +1,1 @@
+"""swarmtip core: the task ledger and the deterministic qualification engine."""
