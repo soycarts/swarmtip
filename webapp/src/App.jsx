@@ -28,8 +28,10 @@ function App() {
     <div className="wrap">
       <div className="topbar">
         <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="12 9 14.9 11.1 13.8 14.4 10.2 14.4 9.1 11.1" fill="var(--accent)" />
+            <path d="M12 9L12 2M14.9 11.1L21.5 8.9M13.8 14.4L17.9 20.1M10.2 14.4L6.1 20.1M9.1 11.1L2.5 8.9" />
           </svg>
           SWARMTIP
         </div>
