@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import SwarmBoard from './components/SwarmBoard';
 import CitedBrief from './components/CitedBrief';
 import AudioPlayer from './components/AudioPlayer';
+import ResultsTable from './components/ResultsTable';
+import LiveStandings from './components/LiveStandings';
+import ProjectedR32 from './components/ProjectedR32';
 import { queryClickHouse } from './clickhouse';
 
 function App() {
@@ -45,11 +48,13 @@ function App() {
 
       <div className="grid">
         <div>
+          <ResultsTable />
+          <LiveStandings />
+          <ProjectedR32 />
           <SwarmBoard />
         </div>
         <div>
           <CitedBrief />
-          <AudioPlayer />
           
           <div className="panel">
             <h2>Signal Output</h2>
