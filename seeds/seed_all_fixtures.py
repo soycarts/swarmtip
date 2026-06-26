@@ -11,28 +11,28 @@ def seed():
     # fixture_id, group_id, home_team, away_team, kickoff, status
     fixtures_data = [
         # Group A (Completed)
-        ("A_MEX_RSA", "A", "Mexico", "South Africa", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
-        ("A_KOR_IRL", "A", "South Korea", "Ireland", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
+        ("A_USA_MEX", "A", "USA", "Mexico", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
+        ("A_CAN_JAM", "A", "Canada", "Jamaica", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
 
         # Group B (Completed)
-        ("B_CAN_SUI", "B", "Canada", "Switzerland", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
-        ("B_ITA_QAT", "B", "Italy", "Qatar", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
+        ("B_ENG_WAL", "B", "England", "Wales", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
+        ("B_SCO_UKR", "B", "Scotland", "Ukraine", datetime.datetime(2026, 6, 25, 15, 0), "finished"),
 
         # Group C (Completed)
-        ("C_BRA_SCO", "C", "Brazil", "Scotland", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
-        ("C_MAR_HAI", "C", "Morocco", "Haiti", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
+        ("C_ARG_POL", "C", "Argentina", "Poland", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
+        ("C_SAU_AUS", "C", "Saudi Arabia", "Australia", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
 
         # Group D (Completed)
-        ("D_USA_PAR", "D", "USA", "Paraguay", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
-        ("D_AUS_TUR", "D", "Australia", "Turkey", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
+        ("D_FRA_DEN", "D", "France", "Denmark", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
+        ("D_TUN_PER", "D", "Tunisia", "Peru", datetime.datetime(2026, 6, 25, 18, 0), "finished"),
 
         # Group E (Completed)
-        ("E_GER_ECU", "E", "Germany", "Ecuador", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
-        ("E_CIV_CUW", "E", "Ivory Coast", "Curacao", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
+        ("E_ESP_GER", "E", "Spain", "Germany", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
+        ("E_JPN_CRC", "E", "Japan", "Costa Rica", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
 
         # Group F (Completed)
-        ("F_NED_JPN", "F", "Netherlands", "Japan", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
-        ("F_POL_TUN", "F", "Poland", "Tunisia", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
+        ("F_BRA_SUI", "F", "Brazil", "Switzerland", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
+        ("F_SRB_CMR", "F", "Serbia", "Cameroon", datetime.datetime(2026, 6, 25, 21, 0), "finished"),
 
         # Group G (Scheduled)
         ("G_EGY_IRN", "G", "Egypt", "Iran", datetime.datetime(2026, 6, 27, 4, 0), "scheduled"),
@@ -62,28 +62,28 @@ def seed():
     # Market odds per fixture
     odds_data = [
         # Group A
-        ("A_MEX_RSA", "Bet365", 1.80, 3.40, 4.50),
-        ("A_KOR_IRL", "Bet365", 2.20, 3.10, 3.40),
+        ("A_USA_MEX", "Bet365", 1.90, 3.30, 4.20),
+        ("A_CAN_JAM", "Bet365", 1.50, 4.00, 6.50),
 
         # Group B
-        ("B_CAN_SUI", "Bet365", 2.60, 3.00, 2.90),
-        ("B_ITA_QAT", "Bet365", 1.30, 5.00, 11.00),
+        ("B_ENG_WAL", "Bet365", 1.60, 3.80, 5.50),
+        ("B_SCO_UKR", "Bet365", 2.40, 3.10, 3.10),
 
         # Group C
-        ("C_BRA_SCO", "Bet365", 1.40, 4.50, 8.00),
-        ("C_MAR_HAI", "Bet365", 1.50, 4.00, 6.50),
+        ("C_ARG_POL", "Bet365", 1.45, 4.20, 7.50),
+        ("C_SAU_AUS", "Bet365", 2.20, 3.20, 3.35),
 
         # Group D
-        ("D_USA_PAR", "Bet365", 1.75, 3.50, 4.80),
-        ("D_AUS_TUR", "Bet365", 2.50, 3.10, 3.00),
+        ("D_FRA_DEN", "Bet365", 1.85, 3.40, 4.50),
+        ("D_TUN_PER", "Bet365", 2.10, 3.20, 3.60),
 
         # Group E
-        ("E_GER_ECU", "Bet365", 1.65, 3.75, 5.50),
-        ("E_CIV_CUW", "Bet365", 1.45, 4.20, 7.50),
+        ("E_ESP_GER", "Bet365", 2.15, 3.30, 3.30),
+        ("E_JPN_CRC", "Bet365", 2.00, 3.20, 4.00),
 
         # Group F
-        ("F_NED_JPN", "Bet365", 2.10, 3.30, 3.50),
-        ("F_POL_TUN", "Bet365", 1.95, 3.25, 4.20),
+        ("F_BRA_SUI", "Bet365", 1.55, 3.90, 6.00),
+        ("F_SRB_CMR", "Bet365", 1.90, 3.40, 4.10),
 
         # Group G
         ("G_EGY_IRN", "Bet365", 2.45, 2.65, 3.75),

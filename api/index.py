@@ -385,18 +385,18 @@ def compute_live_standings():
 
 
 FINISHED_SCORES_FALLBACK = {
-    "A_MEX_RSA": "2-1",
-    "A_KOR_IRL": "1-1",
-    "B_CAN_SUI": "1-0",
-    "B_ITA_QAT": "3-0",
-    "C_BRA_SCO": "2-0",
-    "C_MAR_HAI": "3-1",
-    "D_USA_PAR": "2-1",
-    "D_AUS_TUR": "1-1",
-    "E_GER_ECU": "3-1",
-    "E_CIV_CUW": "2-0",
-    "F_NED_JPN": "2-2",
-    "F_POL_TUN": "1-0",
+    "A_USA_MEX": "1-1",
+    "A_CAN_JAM": "2-0",
+    "B_ENG_WAL": "2-1",
+    "B_SCO_UKR": "1-0",
+    "C_ARG_POL": "2-0",
+    "C_SAU_AUS": "2-1",
+    "D_FRA_DEN": "1-1",
+    "D_TUN_PER": "2-0",
+    "E_ESP_GER": "2-1",
+    "E_JPN_CRC": "1-1",
+    "F_BRA_SUI": "1-1",
+    "F_SRB_CMR": "2-1",
 }
 
 @app.get("/api/matches")
