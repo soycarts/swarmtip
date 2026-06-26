@@ -385,18 +385,53 @@ def compute_live_standings():
 
 
 FINISHED_SCORES_FALLBACK = {
-    "A_USA_MEX": "1-1",
-    "A_CAN_JAM": "2-0",
-    "B_ENG_WAL": "2-1",
-    "B_SCO_UKR": "1-0",
-    "C_ARG_POL": "2-0",
-    "C_SAU_AUS": "2-1",
-    "D_FRA_DEN": "1-1",
-    "D_TUN_PER": "2-0",
-    "E_ESP_GER": "2-1",
-    "E_JPN_CRC": "1-1",
-    "F_BRA_SUI": "1-1",
-    "F_SRB_CMR": "2-1",
+    # Group A
+    "A_MEX_RSA": "2-0",
+    "A_KOR_CZE": "2-1",
+    "A_CZE_RSA": "1-1",
+    "A_MEX_KOR": "1-0",
+    "A_MEX_CZE": "3-0",
+    "A_RSA_KOR": "1-0",
+    
+    # Group B
+    "B_CAN_BIH": "1-1",
+    "B_QAT_SUI": "1-1",
+    "B_CAN_QAT": "6-0",
+    "B_SUI_BIH": "4-1",
+    "B_SUI_CAN": "2-1",
+    "B_BIH_QAT": "3-1",
+    
+    # Group C
+    "C_BRA_MAR": "1-1",
+    "C_SCO_HAI": "1-0",
+    "C_SCO_MAR": "0-1",
+    "C_BRA_HAI": "3-0",
+    "C_SCO_BRA": "0-3",
+    "C_MAR_HAI": "4-2",
+    
+    # Group D
+    "D_USA_PAR": "4-1",
+    "D_AUS_TUR": "2-0",
+    "D_USA_AUS": "2-0",
+    "D_PAR_TUR": "1-0",
+    "D_TUR_USA": "3-2",
+    "D_AUS_PAR": "1-1",
+    
+    # Group E
+    "E_GER_CUW": "7-1",
+    "E_CIV_ECU": "1-0",
+    "E_GER_CIV": "2-1",
+    "E_ECU_CUW": "0-0",
+    "E_CIV_CUW": "2-0",
+    "E_ECU_GER": "2-1",
+    
+    # Group F
+    "F_NED_JPN": "2-2",
+    "F_SWE_TUN": "5-1",
+    "F_NED_SWE": "5-1",
+    "F_TUN_JPN": "0-4",
+    "F_TUN_NED": "1-3",
+    "F_JPN_SWE": "2-1",
 }
 
 @app.get("/api/matches")
