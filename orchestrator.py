@@ -1,10 +1,12 @@
 import asyncio
+import datetime
 from core.db import client
 import core.tasks
 from agents.context import agent as context_agent
 from agents.strategy import agent as strategy_agent
 from agents.pricing import agent as pricing_agent
 from agents.publisher import agent as publisher_agent
+from agents.kickoff import agent as kickoff_agent
 from core import qualification
 
 def handle_assess(task: dict):
@@ -22,6 +24,7 @@ HANDLERS = {
     "strategy": strategy_agent.handle,
     "price": pricing_agent.handle,
     "publish": publisher_agent.handle,
+    "research_kickoff": kickoff_agent.handle,
 }
 
 ACTORS = {
@@ -31,6 +34,7 @@ ACTORS = {
     "strategy": "strategy",
     "price": "pricing",
     "publish": "publisher",
+    "research_kickoff": "kickoff",
 }
 
 async def check_and_trigger_fixtures():
@@ -38,20 +42,73 @@ async def check_and_trigger_fixtures():
     Dual-frequency triggering mechanism:
     - Pre-match (scheduled): Checks once per hour.
     - In-play (live): Checks regularly (every minute via the Modal cron heartbeat).
+    - Kickoff Research (Tavily): Autonomous kickoff verification.
     """
     print("Checking fixtures for scheduled (hourly) and live (regular) assessments...")
     try:
         ch = client()
-        fixtures = [dict(zip(["fixture_id", "group_id", "home_team", "away_team", "status"], r))
-                    for r in ch.query("SELECT fixture_id, group_id, home_team, away_team, status FROM fixtures").result_rows]
+        # Query utilizing ReplacingMergeTree properties to get the latest row per fixture
+        fixtures = [dict(zip(["fixture_id", "group_id", "home_team", "away_team", "status", "kickoff"], r))
+                    for r in ch.query("""
+                        SELECT fixture_id,
+                               argMax(group_id, updated_at) AS group_id,
+                               argMax(home_team, updated_at) AS home_team,
+                               argMax(away_team, updated_at) AS away_team,
+                               argMax(status, updated_at) AS status,
+                               argMax(kickoff, updated_at) AS kickoff
+                        FROM fixtures
+                        GROUP BY fixture_id
+                    """).result_rows]
+                    
         current_tasks = core.tasks.current()
-        import datetime
         now = datetime.datetime.utcnow()
 
         for fixture in fixtures:
             fx_id = fixture["fixture_id"]
             status = fixture["status"]
+            kickoff = fixture["kickoff"]
+            group_id = fixture["group_id"]
+            home = fixture["home_team"]
+            away = fixture["away_team"]
             
+            # Ensure kickoff has no timezone for direct comparison with datetime.utcnow()
+            if kickoff.tzinfo is not None:
+                kickoff = kickoff.replace(tzinfo=None)
+
+            # 1. Trigger kickoff research if not already started or completed
+            kickoff_tasks = [t for t in current_tasks if t["fixture_id"] == fx_id and t["task_type"] == "research_kickoff"]
+            if not kickoff_tasks:
+                print(f"[Orchestrator] Triggering kickoff research task for {fx_id}")
+                core.tasks.create(
+                    kind="agent",
+                    task_type="research_kickoff",
+                    fixture_id=fx_id,
+                    actor="orchestrator",
+                    assignee="kickoff",
+                    title=f"Research kickoff time for {fx_id}"
+                )
+                
+            # 2. Dynamic Match Status Transition
+            determined_status = "scheduled"
+            if now >= kickoff:
+                if now <= kickoff + datetime.timedelta(minutes=110):
+                    determined_status = "live"
+                else:
+                    determined_status = "finished"
+                    
+            if status != determined_status:
+                print(f"[Orchestrator] Transitioning {fx_id} status from '{status}' to '{determined_status}'")
+                ch.insert(
+                    "fixtures",
+                    [[
+                        fx_id, group_id, home, away, kickoff,
+                        determined_status, datetime.datetime.utcnow()
+                    ]],
+                    column_names=["fixture_id", "group_id", "home_team", "away_team", "kickoff", "status", "updated_at"]
+                )
+                status = determined_status  # update local status reference for downstream checks
+
+            # 3. Assessment Scheduling
             fx_assess = [t for t in current_tasks if t["fixture_id"] == fx_id and t["task_type"] == "assess"]
             active_fx_tasks = [t for t in current_tasks if t["fixture_id"] == fx_id and t["status"] not in ("completed", "failed", "cancelled")]
             
@@ -61,21 +118,24 @@ async def check_and_trigger_fixtures():
                     last_assess_time = last_assess_time.replace(tzinfo=None)
                 seconds_since_last = (now - last_assess_time).total_seconds()
             else:
+                last_assess_time = datetime.datetime.min
                 seconds_since_last = 999999.0
 
             if status == "live":
                 # Regular live checks: if there is no active task chain for this fixture,
                 # and it's been more than 60 seconds since the last check, trigger a new one.
                 if not active_fx_tasks and seconds_since_last > 60.0:
-                    print(f"[Orchestrator] Triggering regular live assessment for {fx_id}")
+                    current_minute = int((now - kickoff).total_seconds() / 60)
+                    current_minute = max(0, min(110, current_minute))
+                    print(f"[Orchestrator] Triggering live in-play assessment for {fx_id} at {current_minute}'")
                     core.tasks.create(
                         kind="agent",
                         task_type="assess",
                         fixture_id=fx_id,
                         actor="orchestrator",
                         assignee="orchestrator",
-                        title=f"Live in-play assess for {fx_id}",
-                        payload={"minute": 0, "score": "0-0", "other_scores": {}}
+                        title=f"Assess fixture {fx_id} at {current_minute}'",
+                        payload={"minute": current_minute, "score": "0-0", "other_scores": {}}
                     )
             elif status == "scheduled":
                 # Pre-match hourly assessments aligned to run at XX:45 each hour
@@ -97,11 +157,50 @@ async def check_and_trigger_fixtures():
     except Exception as e:
         print(f"Error in check_and_trigger_fixtures: {e}")
 
+async def check_and_trigger_news_fetch():
+    """
+    Checks if an hourly news_fetch task has already been created for the current hour start.
+    If not, creates a news_fetch task on the ledger.
+    """
+    print("Checking if hourly news fetch needs to be triggered...")
+    try:
+        current_tasks = core.tasks.current()
+        import datetime
+        now = datetime.datetime.utcnow()
+        current_hour_start = now.replace(minute=0, second=0, microsecond=0)
+        
+        # Check if there is any news_fetch task created in the current hour
+        recent_news_fetches = []
+        for t in current_tasks:
+            if t["task_type"] == "news_fetch":
+                created_at = t["created_at"]
+                if created_at.tzinfo is not None:
+                    created_at = created_at.replace(tzinfo=None)
+                if created_at >= current_hour_start:
+                    recent_news_fetches.append(t)
+                    
+        if not recent_news_fetches:
+            print(f"[Orchestrator] Spawning hourly news_fetch task for hour start {current_hour_start}")
+            core.tasks.create(
+                kind="agent",
+                task_type="news_fetch",
+                actor="orchestrator",
+                assignee="news_gatherer",
+                title=f"Hourly World Cup news feed update ({current_hour_start.strftime('%Y-%m-%d %H:00')} UTC)"
+            )
+        else:
+            print("[Orchestrator] Hourly news_fetch task already exists for this hour.")
+    except Exception as e:
+        print(f"Error in check_and_trigger_news_fetch: {e}")
+
 async def run_loop():
     print("Orchestrator loop started.")
     
     # 1. Trigger any necessary assessments based on match status and timing
     await check_and_trigger_fixtures()
+    
+    # 2. Trigger hourly news fetch if needed
+    await check_and_trigger_news_fetch()
 
     # 2. Main processing loop
     while True:

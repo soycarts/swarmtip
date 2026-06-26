@@ -304,7 +304,13 @@ def compute_live_standings():
         
     live_data = get_live_match_data()
     
-    fx_res = ch.query("SELECT fixture_id, home_team, away_team FROM fixtures")
+    fx_res = ch.query("""
+        SELECT fixture_id,
+               argMax(home_team, updated_at) AS home_team,
+               argMax(away_team, updated_at) AS away_team
+        FROM fixtures
+        GROUP BY fixture_id
+    """)
     fixtures_map = {r[0]: (r[1], r[2]) for r in fx_res.result_rows}
     
     for fid, match_info in live_data.items():
@@ -372,7 +378,17 @@ def compute_live_standings():
 @app.get("/api/matches")
 def get_matches():
     ch = client()
-    fx_res = ch.query("SELECT fixture_id, group_id, home_team, away_team, kickoff, status FROM fixtures ORDER BY kickoff ASC")
+    fx_res = ch.query("""
+        SELECT fixture_id,
+               argMax(group_id, updated_at) AS group_id,
+               argMax(home_team, updated_at) AS home_team,
+               argMax(away_team, updated_at) AS away_team,
+               argMax(kickoff, updated_at) AS kickoff,
+               argMax(status, updated_at) AS status
+        FROM fixtures
+        GROUP BY fixture_id
+        ORDER BY kickoff ASC
+    """)
     cols = fx_res.column_names
     
     live_data = get_live_match_data()

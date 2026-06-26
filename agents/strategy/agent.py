@@ -34,7 +34,16 @@ def handle(task: dict):
     match_class = classify_match(qual, home, away)
     
     s_rows = ch.query("SELECT title, snippet, url FROM sources WHERE fixture_id = %(f)s", parameters={"f": fixture_id}).result_rows
-    sources = [{"title": r[0], "snippet": r[1], "url": r[2]} for r in s_rows]
+    news_rows = ch.query("SELECT title, snippet, url FROM match_news WHERE fixture_id = %(f)s", parameters={"f": fixture_id}).result_rows
+    
+    seen_urls = set()
+    sources = []
+    for r in news_rows + s_rows:
+        url = r[2]
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        sources.append({"title": r[0], "snippet": r[1], "url": url})
     
     context = "\n".join(f"- {s['title']}: {s['snippet'][:300]} ({s['url']})" for s in sources)
     prompt = f"""You estimate the probability of a DRAW in a World Cup match.
@@ -93,6 +102,16 @@ object: {{"draw_prob": <0..1>, "rationale": "<one sentence>", "play_for_draw": t
         text = text.removeprefix("```").removesuffix("```").strip()
         
     data = json.loads(text)
+    
+    # Enrich the returned results with detailed metadata for reasoning traces
+    data["model_used"] = model_name
+    data["match_class"] = match_class
+    data["home_team"] = home
+    data["away_team"] = away
+    data["qualification_scenarios"] = {
+        home: qual.get(home, {}).get("reasoning", ""),
+        away: qual.get(away, {}).get("reasoning", "")
+    }
     
     # spawn price task
     core.tasks.spawn(task["task_id"], "agent", "price", fixture_id=fixture_id, actor="strategy", assignee="pricing", payload={

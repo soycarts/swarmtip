@@ -17,13 +17,21 @@ def handle(task: dict):
 
     existing = ch.query("SELECT count() FROM sources WHERE fixture_id = %(f)s", parameters={"f": fixture_id}).result_rows[0][0]
     if existing > 0:
-        return {"status": "already grounded"}
+        rows = ch.query("SELECT query, url, title, snippet FROM sources WHERE fixture_id = %(f)s", parameters={"f": fixture_id}).result_rows
+        sources = [{"fixture_id": fixture_id, "query": r[0], "url": r[1], "title": r[2], "snippet": r[3]} for r in rows]
+        return {
+            "status": "already grounded",
+            "sources_count": len(sources),
+            "queries_run": list(set(s["query"] for s in sources)),
+            "sources": sources
+        }
 
     sources = []
-    for q in [
+    queries = [
         f"{home} {away} World Cup 2026 team news lineup",
         f"{home} {away} qualification scenario draw",
-    ]:
+    ]
+    for q in queries:
         res = tavily.search(query=q, max_results=4, search_depth="advanced")
         for r in res["results"]:
             sources.append({
@@ -33,4 +41,9 @@ def handle(task: dict):
     if sources:
         ch.insert("sources", [list(s.values()) for s in sources],
                   column_names=list(sources[0].keys()))
-    return {"status": "grounded", "sources_count": len(sources)}
+    return {
+        "status": "grounded",
+        "sources_count": len(sources),
+        "queries_run": queries,
+        "sources": sources
+    }

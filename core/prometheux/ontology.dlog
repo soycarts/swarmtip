@@ -1,0 +1,27 @@
+% ==============================================================================
+% Prometheux Ontology Rules: World Cup Group Stage Qualification
+% ==============================================================================
+
+% Rule 1: projected_points(Team, FixtureId, Pts)
+% Under a draw, a team's projected points is their current points + 1.
+projected_points(T, F, P) :- standings(T, CurrentP), P = CurrentP + 1.
+
+% Rule 2: secures_top2(Team, FixtureId)
+% A team secures a top-2 finish if, under all final-day scenarios (all outcomes
+% of the sibling match in the group) given a draw in FixtureId, the team's 
+% minimum possible position is 1st or 2nd.
+secures_top2(T, F) :- projected_points(T, F, P), group_scenario_min_position(T, F, Pos), Pos <= 2.
+
+% Rule 3: secures_best_third(Team, FixtureId)
+% A team secures a best-third finish if they finish 3rd in their group under a draw, 
+% and their projected points meet the qualification bar:
+%   - Case A: Projected points are >= 4.
+%   - Case B: Projected points are = 3 and the goal difference is >= 0 (historical threshold).
+secures_best_third(T, F) :- projected_points(T, F, P), group_scenario_min_position(T, F, 3), P >= 4.
+secures_best_third(T, F) :- projected_points(T, F, P), group_scenario_min_position(T, F, 3), P == 3, goal_difference(T, GD), GD >= 0.
+
+% Rule 4: draw_sufficient(Team, FixtureId)
+% A draw is sufficient for a team's qualification if they secure a top-2 finish
+% or secure a best-third qualification spot.
+draw_sufficient(T, F) :- secures_top2(T, F).
+draw_sufficient(T, F) :- secures_best_third(T, F).

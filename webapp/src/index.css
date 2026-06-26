@@ -1015,3 +1015,65 @@ input[type="range"]:disabled { cursor: not-allowed; }
   margin: 0;
 }
 
+
+/* Reasoning Traces styling */
+.trace-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.trace-card:hover {
+  border-color: var(--border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.trace-card.expanded {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.trace-header {
+  transition: background 0.15s ease-in-out;
+}
+
+.trace-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.trace-metric {
+  background: rgba(30, 41, 59, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  flex: 1;
+  min-width: 90px;
+}
+
+.source-link {
+  transition: all 0.15s ease-in-out;
+}
+
+.source-link:hover {
+  color: var(--accent) !important;
+  text-decoration: underline !important;
+}
+
+/* Custom scrollbar for raw sources inside reasoning trace */
+.trace-body ::-webkit-scrollbar {
+  width: 5px;
+}
+
+.trace-body ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 4px;
+}
+
+.trace-body ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.trace-body ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+

@@ -113,3 +113,15 @@ CREATE TABLE IF NOT EXISTS heartbeats (
     note   String DEFAULT ''
 ) ENGINE = MergeTree
 ORDER BY (agent, ts);
+
+-- Latest match news feed from Tavily.
+CREATE TABLE IF NOT EXISTS match_news (
+    news_id      UUID DEFAULT generateUUIDv4(),
+    fixture_id   String,
+    title        String,
+    url          String,
+    snippet      String,
+    source_name  String DEFAULT 'Tavily',
+    fetched_at   DateTime64(3) DEFAULT now64(3)
+) ENGINE = MergeTree
+ORDER BY (fixture_id, fetched_at);

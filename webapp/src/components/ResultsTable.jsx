@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
+const formatKickoff = (isoString) => {
+  if (!isoString) return "";
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) + " at " + 
+           date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return isoString;
+  }
+};
+
 export default function ResultsTable() {
   const [matches, setMatches] = useState([]);
 
@@ -55,6 +66,11 @@ export default function ResultsTable() {
                   <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 500 }}>vs</span>
                   <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '14px' }}>{m.away_team}</span>
                 </div>
+                {m.kickoff && (
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
+                    {formatKickoff(m.kickoff)}
+                  </div>
+                )}
               </div>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -115,6 +115,7 @@ SELECT task_id,
        argMaxIf(title, ts, title != '')      AS title,
        argMaxIf(payload, ts, payload != '{{}}' AND payload != '') AS payload,
        argMaxIf(result, ts, result != '{{}}' AND result != '')  AS result,
+       min(ts)                AS created_at,
        max(ts)                AS updated_at
 FROM {TABLE}
 GROUP BY task_id
