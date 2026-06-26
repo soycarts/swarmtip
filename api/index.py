@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.db import client
+import re
 
 app = FastAPI()
 
@@ -36,12 +37,20 @@ def get_board():
     return tasks
 
 @app.get("/api/tasks")
-def get_tasks(page: int = 1, limit: int = 10):
+def get_tasks(page: int = 1, limit: int = 10, resolver: str = None):
     ch = client()
     offset = (page - 1) * limit
     
+    where_clause = ""
+    if resolver:
+        # Sanitize parameter to prevent SQL injection
+        resolver_clean = re.sub(r'[^a-zA-Z0-9_\-]', '', resolver)
+        if resolver_clean:
+            where_clause = f"WHERE resolved_by = '{resolver_clean}'"
+            
     # Get total count
-    count_res = ch.query("SELECT count() FROM tasks_current")
+    count_query = f"SELECT count() FROM tasks_current {where_clause}"
+    count_res = ch.query(count_query)
     total_count = count_res.result_rows[0][0]
     
     # Query tasks
@@ -49,6 +58,7 @@ def get_tasks(page: int = 1, limit: int = 10):
         SELECT task_id, status, kind, task_type, assigned_to, title, 
                created_by, resolved_by, created_at, resolved_at, updated_at 
         FROM tasks_current 
+        {where_clause}
         ORDER BY created_at DESC 
         LIMIT {limit} OFFSET {offset}
     """

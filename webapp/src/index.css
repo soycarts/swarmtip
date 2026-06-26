@@ -886,6 +886,57 @@ input[type="range"]:disabled { cursor: not-allowed; }
   background: rgba(148, 163, 184, 0.01);
 }
 
+/* Swarm Board header and agent filter dropdown */
+.board-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.board-header-row h2 {
+  margin-bottom: 0;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+
+.filter-select {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.filter-select:hover {
+  border-color: var(--accent);
+  background: rgba(57, 255, 20, 0.05);
+}
+
+.filter-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(57, 255, 20, 0.2);
+}
+
 @media (max-width: 900px) {
   .report-metrics { grid-template-columns: repeat(2, 1fr); }
   .report-body { grid-template-columns: 1fr; }

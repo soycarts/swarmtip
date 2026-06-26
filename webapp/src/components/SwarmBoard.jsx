@@ -5,11 +5,13 @@ export default function SwarmBoard() {
   const [tasks, setTasks] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [resolverFilter, setResolverFilter] = useState("");
   const limit = 8; // 8 rows per page looks very balanced
 
-  const fetchTasks = async (currentPage) => {
+  const fetchTasks = async (currentPage, filter) => {
     try {
-      const res = await fetch(`/api/tasks?page=${currentPage}&limit=${limit}`);
+      const url = `/api/tasks?page=${currentPage}&limit=${limit}${filter ? `&resolver=${filter}` : ""}`;
+      const res = await fetch(url);
       const data = await res.json();
       setTasks(data.tasks);
       setTotal(data.total);
@@ -19,10 +21,10 @@ export default function SwarmBoard() {
   };
 
   useEffect(() => {
-    fetchTasks(page);
-    const interval = setInterval(() => fetchTasks(page), 4000);
+    fetchTasks(page, resolverFilter);
+    const interval = setInterval(() => fetchTasks(page, resolverFilter), 4000);
     return () => clearInterval(interval);
-  }, [page]);
+  }, [page, resolverFilter]);
 
   const formatTime = (isoString) => {
     if (!isoString) return '';
@@ -41,7 +43,31 @@ export default function SwarmBoard() {
 
   return (
     <div className="panel">
-      <h2>Live Swarm Board</h2>
+      <div className="board-header-row">
+        <h2>Live Swarm Board</h2>
+        <div className="filter-group">
+          <label htmlFor="resolver-select" className="filter-label">Filter Completer:</label>
+          <select 
+            id="resolver-select"
+            value={resolverFilter} 
+            onChange={(e) => {
+              setResolverFilter(e.target.value);
+              setPage(1);
+            }}
+            className="filter-select"
+          >
+            <option value="">All Completers</option>
+            <option value="context">context</option>
+            <option value="strategy">strategy</option>
+            <option value="pricing">pricing</option>
+            <option value="publisher">publisher</option>
+            <option value="orchestrator">orchestrator</option>
+            <option value="antigravity">antigravity</option>
+            <option value="cursor">cursor</option>
+            <option value="claude-code">claude-code</option>
+          </select>
+        </div>
+      </div>
       
       <div className="tb-summary">
         <span className="tb-sum st-todo">todo</span>
@@ -70,17 +96,6 @@ export default function SwarmBoard() {
             <div className="task-main">
               <div className="task-title" style={{ fontSize: '13px', fontWeight: 500 }}>
                 {task.title}
-              </div>
-              <div className="task-sub">
-                {task.assigned && (
-                  <span className="chip" style={{ color: 'var(--human)', borderColor: 'var(--human)' }}>
-                    {task.assigned}
-                  </span>
-                )}
-                <span className="chip" style={{ color: 'var(--muted)', borderColor: 'var(--border)' }}>
-                  {task.type}
-                </span>
-                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{task.id}</span>
               </div>
               
               <div className="task-meta-info">
