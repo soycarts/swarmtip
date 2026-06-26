@@ -9,7 +9,7 @@ image = modal.Image.debian_slim().pip_install([
     "tavily-python",
     "google-genai",
     "python-dotenv"
-])
+]).add_local_dir(".", remote_path="/app")
 
 app = modal.App("swarmtip-orchestrator")
 
@@ -19,6 +19,16 @@ app = modal.App("swarmtip-orchestrator")
     secrets=[modal.Secret.from_dotenv()]
 )
 def run_orchestrator():
+    import sys
+    import os
+    print("SYS PATH:", sys.path)
+    print("CWD:", os.getcwd())
+    if os.path.exists("/app"):
+        print("CONTENTS OF /app:", os.listdir("/app"))
+    else:
+        print("/app DOES NOT EXIST")
+    
+    sys.path.insert(0, "/app")
     from orchestrator import run_loop
     import asyncio
     
