@@ -106,7 +106,8 @@ def get_tasks(page: int = 1, limit: int = 10, resolver: str = None):
 @app.get("/api/signals")
 def get_signals():
     ch = client()
-    res = ch.query("SELECT fixture_id, match_class, recommendation, model_draw_prob, edge FROM value_signals ORDER BY ts DESC LIMIT 10")
+    # Support sorting by created_at or ts depending on schema
+    res = ch.query("SELECT fixture_id, match_class, recommendation, model_draw_prob, edge FROM value_signals ORDER BY created_at DESC LIMIT 10")
     signals = []
     for r in res.result_rows:
         signals.append({
@@ -117,6 +118,108 @@ def get_signals():
             "edge": r[4],
         })
     return signals
+
+@app.get("/api/stats")
+def get_stats():
+    ch = client()
+    
+    # 1. Total BET_DRAW recommendations
+    bet_draw_res = ch.query("SELECT count() FROM value_signals WHERE recommendation = 'BET_DRAW'")
+    total_recommendations = bet_draw_res.result_rows[0][0] if bet_draw_res.result_rows else 0
+    
+    # 2. Total checked fixtures
+    checked_res = ch.query("SELECT count() FROM value_signals")
+    total_checked = checked_res.result_rows[0][0] if checked_res.result_rows else 0
+    
+    # 3. Active recommendations (where fixture status is live or scheduled)
+    active_res = ch.query("""
+        SELECT count() 
+        FROM value_signals v
+        JOIN fixtures f ON v.fixture_id = f.fixture_id
+        WHERE v.recommendation = 'BET_DRAW' AND f.status IN ('scheduled', 'live')
+    """)
+    active_recommendations = active_res.result_rows[0][0] if active_res.result_rows else 0
+    
+    return {
+        "active_recommendations": active_recommendations,
+        "total_recommendations": total_recommendations,
+        "total_checked": total_checked
+    }
+
+
+@app.get("/api/news")
+def get_news(fixture_id: str = None, limit: int = 15):
+    ch = client()
+    
+    where_clause = ""
+    if fixture_id:
+        fixture_id_clean = re.sub(r'[^a-zA-Z0-9_\-]', '', fixture_id)
+        where_clause = f"WHERE s.fixture_id = '{fixture_id_clean}'"
+        
+    # 1. Fetch from the dedicated match_news table first
+    query_match_news = f"""
+        SELECT s.fixture_id, s.title, s.url, s.snippet, s.fetched_at, f.home_team, f.away_team
+        FROM match_news s
+        LEFT JOIN fixtures f ON s.fixture_id = f.fixture_id
+        {where_clause}
+        ORDER BY s.fetched_at DESC
+        LIMIT {limit}
+    """
+    
+    res = ch.query(query_match_news)
+    news = []
+    seen_urls = set()
+    
+    cols = res.column_names
+    for row in res.result_rows:
+        d = dict(zip(cols, row))
+        url = d.get("url")
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        news.append({
+            "fixture_id": d.get("fixture_id"),
+            "url": url,
+            "title": d.get("title") or "Match News",
+            "snippet": d.get("snippet") or "",
+            "source_name": "Tavily News Feed",
+            "fetched_at": to_utc_iso(d.get("fetched_at")),
+            "home_team": d.get("home_team") or "",
+            "away_team": d.get("away_team") or ""
+        })
+        
+    # 2. Fall back to / supplement with grounding sources
+    if len(news) < limit:
+        query_sources = f"""
+            SELECT s.fixture_id, s.title, s.url, s.snippet, s.fetched_at, f.home_team, f.away_team
+            FROM sources s
+            LEFT JOIN fixtures f ON s.fixture_id = f.fixture_id
+            {where_clause}
+            ORDER BY s.fetched_at DESC
+        """
+        res_sources = ch.query(query_sources)
+        cols_s = res_sources.column_names
+        for row in res_sources.result_rows:
+            if len(news) >= limit:
+                break
+            d = dict(zip(cols_s, row))
+            url = d.get("url")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            news.append({
+                "fixture_id": d.get("fixture_id"),
+                "url": url,
+                "title": d.get("title") or "Match News",
+                "snippet": d.get("snippet") or "",
+                "source_name": "Grounding Evidence",
+                "fetched_at": to_utc_iso(d.get("fetched_at")),
+                "home_team": d.get("home_team") or "",
+                "away_team": d.get("away_team") or ""
+            })
+            
+    return news
+
 
 
 def get_live_match_data() -> dict:
@@ -346,3 +449,35 @@ def get_round_of_32():
         })
         
     return projected
+
+
+@app.get("/api/traces")
+def get_traces():
+    import json
+    ch = client()
+    query = """
+        SELECT task_id, task_type, fixture_id, result, updated_at
+        FROM tasks_current
+        WHERE status = 'completed' AND task_type IN ('ground', 'strategy')
+        ORDER BY updated_at DESC
+        LIMIT 15
+    """
+    res = ch.query(query)
+    traces = []
+    cols = res.column_names
+    for row in res.result_rows:
+        d = dict(zip(cols, row))
+        try:
+            result_parsed = json.loads(d["result"]) if d["result"] else {}
+        except Exception:
+            result_parsed = {}
+            
+        traces.append({
+            "task_id": d["task_id"],
+            "task_type": d["task_type"],
+            "fixture_id": d["fixture_id"],
+            "result": result_parsed,
+            "updated_at": to_utc_iso(d.get("updated_at"))
+        })
+    return traces
+

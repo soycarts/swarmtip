@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import SwarmBoard from './components/SwarmBoard';
 import CitedBrief from './components/CitedBrief';
-import AudioPlayer from './components/AudioPlayer';
 import ResultsTable from './components/ResultsTable';
 import LiveStandings from './components/LiveStandings';
 import ProjectedR32 from './components/ProjectedR32';
+import ToplineSummary from './components/ToplineSummary';
+import TavilyNewsFeed from './components/TavilyNewsFeed';
+import ReasoningTraces from './components/ReasoningTraces';
 import { queryClickHouse } from './clickhouse';
 
 function App() {
@@ -46,15 +48,19 @@ function App() {
         </div>
       </div>
 
+      <ToplineSummary />
+
       <div className="grid">
         <div>
           <ResultsTable />
           <LiveStandings />
           <ProjectedR32 />
           <SwarmBoard />
+          <TavilyNewsFeed />
         </div>
         <div>
           <CitedBrief />
+          <ReasoningTraces />
           
           <div className="panel">
             <h2>Signal Output</h2>

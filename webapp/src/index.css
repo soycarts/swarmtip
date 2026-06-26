@@ -941,3 +941,77 @@ input[type="range"]:disabled { cursor: not-allowed; }
   .report-metrics { grid-template-columns: repeat(2, 1fr); }
   .report-body { grid-template-columns: 1fr; }
 }
+
+/* Tavily news feed specific styling */
+.news-panel {
+  border-color: rgba(71, 85, 105, 0.7);
+  margin-top: 16px;
+}
+
+.news-item {
+  border-left: 2px solid var(--border);
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.2);
+  border-radius: 0 6px 6px 0;
+  transition: all 0.25s ease-in-out;
+  margin-bottom: 8px;
+}
+
+.news-item:hover {
+  background: rgba(30, 41, 59, 0.65);
+  border-left-color: var(--accent);
+  transform: translateX(2px);
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.news-domain {
+  font-family: monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--human);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.news-match-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(57, 255, 20, 0.08);
+  border: 1px solid rgba(57, 255, 20, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.news-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.news-link-title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  margin: 6px 0;
+  line-height: 1.45;
+  transition: color 0.15s ease;
+}
+
+.news-link-title:hover {
+  color: var(--accent);
+}
+
+.news-snippet {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 0;
+}
+
