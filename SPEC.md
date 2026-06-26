@@ -79,7 +79,7 @@ swarmtip/
 │   └── x402_app.py           # FastAPI gated signal endpoint
 ├── orchestrator.py           # one asyncio process: feed -> spawn tasks -> run agents
 ├── modal_app.py              # Modal deploy + schedule
-└── webapp/                   # AI Studio demo surface: live board, brief, audio
+└── webapp/                   # Vercel Vite/React app: live board, brief, audio
 ```
 
 `core/qualification.py` is the deterministic engine from the starter `pipeline.py`. The
@@ -352,10 +352,10 @@ multi-group batching polish, the buy-side x402 call.
 - **Presentation**: three beats inside 3 minutes, the flip legible, the board live.
 - **Autonomy**: the loop runs on a schedule against current data with no human in the path.
 
-## 15. Notes for Google AI Studio
+## 15. Notes for Vercel Web App
 
-Build the agent handlers and the demo surface as the AI Studio app: a page that streams the
+Build the agent handlers and the demo surface as a Vercel-deployed web app (Vite + React): a page that streams the
 `swarm_board`, the qualification recompute, the strategy flip, the edge, the cited brief,
 and the audio. Call ClickHouse, Prometheux, Senso, and the x402 endpoint as external
-services. Keep the qualification engine deterministic and outside the LLM. Keep model
+services from your backend API, which the frontend will poll. Keep the qualification engine deterministic and outside the LLM. Keep model
 strings and keys in `config.py`.

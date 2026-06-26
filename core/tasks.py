@@ -28,23 +28,7 @@ import clickhouse_connect
 TABLE = "task_events"
 TERMINAL = {"completed", "failed", "cancelled"}
 
-_client = None
-
-
-def client():
-    """Lazily build and cache the ClickHouse client so importing this module is cheap."""
-    global _client
-    if _client is None:
-        secure = os.environ.get("CLICKHOUSE_SECURE", "false").lower() in ("1", "true", "yes")
-        _client = clickhouse_connect.get_client(
-            host=os.environ.get("CLICKHOUSE_HOST", "localhost"),
-            port=int(os.environ.get("CLICKHOUSE_PORT", "8443" if secure else "8123")),
-            username=os.environ.get("CLICKHOUSE_USER", "default"),
-            password=os.environ.get("CLICKHOUSE_PASSWORD", ""),
-            secure=secure,
-            database=os.environ.get("CLICKHOUSE_DATABASE", "default"),
-        )
-    return _client
+from core.db import client
 
 
 _COLUMNS = ["task_id", "event_type", "kind", "task_type", "actor",
@@ -122,11 +106,13 @@ _CURRENT_SQL = f"""
 SELECT task_id,
        argMax(event_type, ts) AS status,
        argMax(kind, ts)       AS kind,
-       argMax(task_type, ts)  AS task_type,
-       argMax(actor, ts)      AS assigned_to,
-       argMax(fixture_id, ts) AS fixture_id,
-       argMax(depends_on, ts) AS depends_on,
-       argMax(title, ts)      AS title,
+       argMaxIf(task_type, ts, task_type != '')  AS task_type,
+       argMaxIf(actor, ts, actor != '')      AS assigned_to,
+       argMaxIf(fixture_id, ts, fixture_id != '') AS fixture_id,
+       argMaxIf(depends_on, ts, notEmpty(depends_on)) AS depends_on,
+       argMaxIf(title, ts, title != '')      AS title,
+       argMaxIf(payload, ts, payload != '{{}}' AND payload != '') AS payload,
+       argMaxIf(result, ts, result != '{{}}' AND result != '')  AS result,
        max(ts)                AS updated_at
 FROM {TABLE}
 GROUP BY task_id
@@ -136,7 +122,17 @@ GROUP BY task_id
 def current() -> list[dict]:
     """Current state of every task (latest event wins). Self-contained, no view needed."""
     res = client().query(_CURRENT_SQL)
-    return [dict(zip(res.column_names, row)) for row in res.result_rows]
+    out = []
+    for row in res.result_rows:
+        d = dict(zip(res.column_names, row))
+        if "payload" in d and d["payload"]:
+            try: d["payload"] = json.loads(d["payload"])
+            except: d["payload"] = {}
+        if "result" in d and d["result"]:
+            try: d["result"] = json.loads(d["result"])
+            except: d["result"] = {}
+        out.append(d)
+    return out
 
 
 def claimable(kind: str | None = None, task_type: str | None = None) -> list[dict]:

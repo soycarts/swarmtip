@@ -81,3 +81,31 @@ CREATE TABLE IF NOT EXISTS value_signals (
     created_at       DateTime DEFAULT now()
 ) ENGINE = ReplacingMergeTree(created_at)
 ORDER BY fixture_id;
+
+-- Append-only source of truth for all task transitions, both lanes.
+CREATE TABLE IF NOT EXISTS task_events (
+    event_id    UUID DEFAULT generateUUIDv4(),
+    task_id     String,
+    ts          DateTime64(3) DEFAULT now64(3),
+    event_type  Enum8('created'=1,'claimed'=2,'started'=3,'progress'=4,
+                      'completed'=5,'failed'=6,'blocked'=7,'cancelled'=8),
+    kind        Enum8('coding'=1,'agent'=2),
+    task_type   String,                 -- ground|qualify|strategy|price|publish|dev
+    actor       String,                 -- agent name or human handle
+    fixture_id  String DEFAULT '',
+    depends_on  Array(String) DEFAULT [],
+    parent_task String DEFAULT '',
+    title       String DEFAULT '',
+    payload     String DEFAULT '{}',    -- JSON
+    result      String DEFAULT '{}'     -- JSON
+) ENGINE = MergeTree
+ORDER BY (task_id, ts);
+
+-- Agent liveness, for the board.
+CREATE TABLE IF NOT EXISTS heartbeats (
+    agent  String,
+    ts     DateTime64(3) DEFAULT now64(3),
+    status String,                       -- idle | working | <task_id>
+    note   String DEFAULT ''
+) ENGINE = MergeTree
+ORDER BY (agent, ts);
