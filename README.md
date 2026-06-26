@@ -22,6 +22,26 @@ there.
 5. Export `CLICKHOUSE_*`, `TAVILY_API_KEY`, `GEMINI_API_KEY`.
 6. `python pipeline.py` for ranked fixtures by draw edge.
 
+## Implemented Prometheux Logic Measures
+
+Our logic-based, deterministic qualification engine implements the following four core declarative ontology measures (defined in `core/prometheux/ontology.dlog` and executed in `core/qualification.py`):
+
+1. **Draw Points Projection (`projected_points(T, F, P)`)**
+   - **Logic**: `standings(T, CurrentP), P = CurrentP + 1`
+   - **Description**: Calculates the team's tournament points if the match under analysis ends in a draw.
+
+2. **Guaranteed Top-2 Finish (`secures_top2(T, F)`)**
+   - **Logic**: `projected_points(T, F, P), group_scenario_min_position(T, F, Pos), Pos <= 2`
+   - **Description**: Evaluates all $3^N$ scenario permutations of sibling fixtures to guarantee the team finishes in the top 2 places of their group stage.
+
+3. **Best-Third Qualification (`secures_best_third(T, F)`)**
+   - **Logic**: `group_scenario_min_position(T, F, 3), (P >= 4 || (P == 3, goal_difference(T, GD), GD >= 0))`
+   - **Description**: Verifies if a 3rd-place finish guarantees progression, requiring either $\ge 4$ points, or exactly 3 points with a non-negative goal difference.
+
+4. **Draw Sufficiency (`draw_sufficient(T, F)`)**
+   - **Logic**: `secures_top2(T, F) || secures_best_third(T, F)`
+   - **Description**: Aggregates rules to flag if a draw is mathematically sufficient for World Cup round-of-32 qualification.
+
 ## Where each sponsor tool plugs in
 
 - **ClickHouse**: store, the task ledger, the live board. Already the spine.
@@ -40,10 +60,40 @@ there.
 
 ## Coordination and autonomy
 
-One asyncio orchestrator is the sole task assigner, so there is no claim race and no extra
-datastore is needed. ClickHouse holds the append-only task ledger and the live board.
-Deploy the orchestrator on a Modal schedule so it pulls genuinely current data during the
-4:30 demo. No approval gate, the loop runs end to end and posts work to the board.
+One asyncio orchestrator is the sole task assigner, so there is no claim race and no extra datastore is needed. ClickHouse holds the append-only task ledger and the live board.
+
+The loop runs end-to-end autonomously with **four core architectural pillars** implementing timezone-aware scheduling, external grounding, and data consistency:
+
+### 1. NewsAgent (Hourly Match News Crawler)
+- **Role**: `news_gatherer` (`NewsAgent`) claims `news_fetch` tasks triggered autonomously at the start of each hour.
+- **Action**: Performs live, advanced Tavily searches for all scheduled and live matches to crawl squad previews, injury updates, and predicted lineups.
+- **Consistency**: Applies an URL-based duplicate filter to discard already ingested stories before inserting into the `match_news` ClickHouse table.
+- **Consumption**: The `StrategyAgent` prompt context queries both historical grounding `sources` and the newly updated `match_news` table to base draw evaluations on real-time news.
+
+### 2. KickoffAgent (Dynamic Kickoff Verification)
+- **Role**: `kickoff` (`KickoffAgent`) claims `research_kickoff` tasks.
+- **Action**: Researches official World Cup 2026 fixture times on-demand using Tavily and uses Gemini to verify and extract official kickoff times into a strict `YYYY-MM-DD HH:MM:00` UTC format, updating the central database.
+
+### 3. Timezone-Aware UTC Orchestration
+- **Action**: Orchestrates all loop executions and state tracking using timezone-aware UTC timestamps (`datetime.now(timezone.utc)`).
+- **Match Status Transitions**: Dynamically calculates and transitions matches from `scheduled` &rarr; `live` &rarr; `finished` depending on real UTC time versus verified kickoff.
+- **In-Play Elapsed Minute Tracking**: Translates active in-play times into actual elapsed minutes and injects them into regular live assessments (e.g., `"minute": 66`), which are displayed in real-time.
+
+### 4. ClickHouse ReplacingMergeTree & argMax Resolve
+- **Action**: Maintains absolute consistency across append-only tables (like `fixtures`). Since entries can be updated with new statuses or kickoffs, the API resolves the latest state of each fixture on-demand using high-performance `argMax(field, updated_at)` aggregations grouped by `fixture_id`:
+```sql
+SELECT fixture_id,
+       argMax(group_id, updated_at) AS group_id,
+       argMax(home_team, updated_at) AS home_team,
+       argMax(away_team, updated_at) AS away_team,
+       argMax(kickoff, updated_at) AS kickoff,
+       argMax(status, updated_at) AS status
+FROM fixtures
+GROUP BY fixture_id
+```
+
+No approval gate is needed: the loop runs end-to-end, writing state to the ClickHouse ledger and instantly updating the live dashboard.
+
 
 ## Build order (4 hours)
 

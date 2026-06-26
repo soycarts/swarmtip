@@ -105,8 +105,17 @@ export default function ResultsTable() {
                     </span>
                   )}
                   {!isLive && !isFinished && (
-                    <span style={{ color: 'var(--muted)', fontSize: '11px', fontWeight: 500 }}>
-                      Scheduled
+                    <span style={{ 
+                      background: 'rgba(56, 189, 248, 0.1)', 
+                      color: 'rgb(56, 189, 248)', 
+                      fontSize: '10px', 
+                      fontWeight: 700, 
+                      padding: '2px 8px', 
+                      borderRadius: '4px', 
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {m.kickoff ? new Date(m.kickoff).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Scheduled'}
                     </span>
                   )}
                 </div>

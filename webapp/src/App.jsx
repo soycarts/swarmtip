@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import SwarmBoard from './components/SwarmBoard';
-import CitedBrief from './components/CitedBrief';
 import ResultsTable from './components/ResultsTable';
 import LiveStandings from './components/LiveStandings';
 import ProjectedR32 from './components/ProjectedR32';
 import ToplineSummary from './components/ToplineSummary';
 import TavilyNewsFeed from './components/TavilyNewsFeed';
 import ReasoningTraces from './components/ReasoningTraces';
+import PrometheuxOntologyPanel from './components/PrometheuxOntologyPanel';
+import ImplementationInfoPanel from './components/ImplementationInfoPanel';
 import { queryClickHouse } from './clickhouse';
 
 function App() {
@@ -55,12 +56,13 @@ function App() {
           <ResultsTable />
           <LiveStandings />
           <ProjectedR32 />
-          <SwarmBoard />
           <TavilyNewsFeed />
         </div>
         <div>
-          <CitedBrief />
+          <SwarmBoard />
           <ReasoningTraces />
+          <PrometheuxOntologyPanel />
+          <ImplementationInfoPanel />
           
           <div className="panel">
             <h2>Signal Output</h2>

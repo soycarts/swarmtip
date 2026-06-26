@@ -112,10 +112,10 @@ Return ONLY a JSON object:
 
     # Parse extracted string into datetime object
     try:
-        kickoff_dt = datetime.datetime.strptime(kickoff_str, "%Y-%m-%d %H:%M:%S")
+        kickoff_dt = datetime.datetime.strptime(kickoff_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc)
     except Exception as e:
         print(f"[KickoffAgent] DateTime parsing error for {kickoff_str}: {e}. Forcing fallback.")
-        kickoff_dt = datetime.datetime.strptime(default_kickoff_str, "%Y-%m-%d %H:%M:%S")
+        kickoff_dt = datetime.datetime.strptime(default_kickoff_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.timezone.utc)
 
     # 6. Insert updated row into ClickHouse fixtures ReplacingMergeTree table
     ch.insert(
@@ -127,7 +127,7 @@ Return ONLY a JSON object:
             away,
             kickoff_dt,
             current_status,
-            datetime.datetime.utcnow()
+            datetime.datetime.now(datetime.timezone.utc)
         ]],
         column_names=["fixture_id", "group_id", "home_team", "away_team", "kickoff", "status", "updated_at"]
     )

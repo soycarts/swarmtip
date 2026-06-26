@@ -61,7 +61,7 @@ async def check_and_trigger_fixtures():
                     """).result_rows]
                     
         current_tasks = core.tasks.current()
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         for fixture in fixtures:
             fx_id = fixture["fixture_id"]
@@ -71,9 +71,9 @@ async def check_and_trigger_fixtures():
             home = fixture["home_team"]
             away = fixture["away_team"]
             
-            # Ensure kickoff has no timezone for direct comparison with datetime.utcnow()
-            if kickoff.tzinfo is not None:
-                kickoff = kickoff.replace(tzinfo=None)
+            # Ensure kickoff is timezone-aware UTC for direct comparison with datetime.now(timezone.utc)
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=datetime.timezone.utc)
 
             # 1. Trigger kickoff research if not already started or completed
             kickoff_tasks = [t for t in current_tasks if t["fixture_id"] == fx_id and t["task_type"] == "research_kickoff"]
@@ -102,7 +102,7 @@ async def check_and_trigger_fixtures():
                     "fixtures",
                     [[
                         fx_id, group_id, home, away, kickoff,
-                        determined_status, datetime.datetime.utcnow()
+                        determined_status, datetime.datetime.now(datetime.timezone.utc)
                     ]],
                     column_names=["fixture_id", "group_id", "home_team", "away_team", "kickoff", "status", "updated_at"]
                 )
@@ -114,11 +114,11 @@ async def check_and_trigger_fixtures():
             
             if fx_assess:
                 last_assess_time = max(t["updated_at"] for t in fx_assess)
-                if last_assess_time.tzinfo is not None:
-                    last_assess_time = last_assess_time.replace(tzinfo=None)
+                if last_assess_time.tzinfo is None:
+                    last_assess_time = last_assess_time.replace(tzinfo=datetime.timezone.utc)
                 seconds_since_last = (now - last_assess_time).total_seconds()
             else:
-                last_assess_time = datetime.datetime.min
+                last_assess_time = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
                 seconds_since_last = 999999.0
 
             if status == "live":
@@ -166,7 +166,7 @@ async def check_and_trigger_news_fetch():
     try:
         current_tasks = core.tasks.current()
         import datetime
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         current_hour_start = now.replace(minute=0, second=0, microsecond=0)
         
         # Check if there is any news_fetch task created in the current hour
@@ -174,8 +174,8 @@ async def check_and_trigger_news_fetch():
         for t in current_tasks:
             if t["task_type"] == "news_fetch":
                 created_at = t["created_at"]
-                if created_at.tzinfo is not None:
-                    created_at = created_at.replace(tzinfo=None)
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=datetime.timezone.utc)
                 if created_at >= current_hour_start:
                     recent_news_fetches.append(t)
                     
