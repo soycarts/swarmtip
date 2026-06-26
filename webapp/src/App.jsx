@@ -10,15 +10,10 @@ function App() {
   useEffect(() => {
     const fetchSignals = async () => {
       try {
-        const query = `
-          SELECT fixture_id, match_class, recommendation, model_draw_prob, edge 
-          FROM value_signals 
-          ORDER BY ts DESC 
-          LIMIT 10
-        `;
-        const data = await queryClickHouse(query);
-        if (data.data && data.data.length > 0) {
-          setSignal(data.data[0]); // just show the most recent signal
+        const res = await fetch('/api/signals');
+        const data = await res.json();
+        if (data.length > 0) {
+          setSignal(data[0]); // just show the most recent signal
         }
       } catch (e) {
         console.error("Failed to fetch signals", e);

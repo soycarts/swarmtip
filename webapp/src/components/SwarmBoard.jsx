@@ -7,14 +7,9 @@ export default function SwarmBoard() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const query = `
-          SELECT task_id as id, status, kind, task_type as type, assigned_to as assigned, title 
-          FROM tasks_current 
-          ORDER BY updated_at DESC 
-          LIMIT 50
-        `;
-        const data = await queryClickHouse(query);
-        setTasks(data.data);
+        const res = await fetch('/api/tasks');
+        const data = await res.json();
+        setTasks(data);
       } catch (e) {
         console.error("Failed to fetch tasks", e);
       }
@@ -64,7 +59,8 @@ export default function SwarmBoard() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

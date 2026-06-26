@@ -7,7 +7,16 @@ from agents.pricing import agent as pricing_agent
 from agents.publisher import agent as publisher_agent
 from core import qualification
 
+def handle_assess(task: dict):
+    fx = task["fixture_id"]
+    assess_id = task["task_id"]
+    ground_id = core.tasks.spawn(assess_id, "agent", "ground", fixture_id=fx, actor="context", title=f"Ground context for {fx}")
+    qualify_id = core.tasks.spawn(assess_id, "agent", "qualify", fixture_id=fx, actor="QualificationEngine", title=f"Derive qualification for {fx}")
+    core.tasks.create("agent", "strategy", fixture_id=fx, actor="strategy", depends_on=[ground_id, qualify_id], title=f"Evaluate strategy for {fx}")
+    return {"status": "spawned_children"}
+
 HANDLERS = {
+    "assess": handle_assess,
     "ground": context_agent.handle,
     "qualify": qualification.handle,
     "strategy": strategy_agent.handle,
@@ -16,6 +25,7 @@ HANDLERS = {
 }
 
 ACTORS = {
+    "assess": "orchestrator",
     "ground": "context",
     "qualify": "QualificationEngine",
     "strategy": "strategy",
@@ -25,20 +35,6 @@ ACTORS = {
 
 async def run_loop():
     print("Orchestrator loop started.")
-    ch = client()
-    fx_rows = ch.query("SELECT fixture_id FROM fixtures WHERE status = 'scheduled'").result_rows
-    
-    for (fx,) in fx_rows:
-        existing = core.tasks.current()
-        if not any(t["task_type"] == "assess" and t["fixture_id"] == fx for t in existing):
-            assess_id = core.tasks.create("agent", "assess", fixture_id=fx, actor="orchestrator", title=f"Assess fixture {fx}")
-            core.tasks.claim(assess_id, "orchestrator")
-            core.tasks.complete(assess_id, "orchestrator")
-            
-            ground_id = core.tasks.spawn(assess_id, "agent", "ground", fixture_id=fx, actor="context", title=f"Ground context for {fx}")
-            qualify_id = core.tasks.spawn(assess_id, "agent", "qualify", fixture_id=fx, actor="QualificationEngine", title=f"Derive qualification for {fx}")
-            
-            core.tasks.create("agent", "strategy", fixture_id=fx, actor="strategy", depends_on=[ground_id, qualify_id], title=f"Evaluate strategy for {fx}")
 
     while True:
         claimable = core.tasks.claimable("agent")

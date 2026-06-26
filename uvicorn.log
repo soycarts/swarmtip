@@ -1,0 +1,22 @@
+INFO:     Will watch for changes in these directories: ['/Users/carter/dev/swarmtip']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [37452] using StatReload
+INFO:     Started server process [37463]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'orchestrator.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [37463]
+INFO:     Started server process [38223]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'modal_app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [38223]
+ERROR:    Error loading ASGI app. Attribute "app" not found in module "api".
+WARNING:  StatReload detected changes in 'modal_app.py'. Reloading...
+ERROR:    Error loading ASGI app. Attribute "app" not found in module "api".

@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS task_events (
     kind        Enum8('coding'=1,'agent'=2),
     task_type   String,                 -- ground|qualify|strategy|price|publish|dev
     actor       String,                 -- agent name or human handle
+    assignee    String DEFAULT '',      -- target agent or human handle
     fixture_id  String DEFAULT '',
     depends_on  Array(String) DEFAULT [],
     parent_task String DEFAULT '',

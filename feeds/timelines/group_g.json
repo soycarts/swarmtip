@@ -1,0 +1,8 @@
+{
+  "match_id": "G_EGY_IRN",
+  "events": [
+    {"t": 0,  "score": "0-0", "other": {"G_NZL_BEL": "0-0"}, "draw_odds": 3.10},
+    {"t": 22, "score": "0-0", "other": {"G_NZL_BEL": "1-0"}, "draw_odds": 3.05},
+    {"t": 38, "score": "0-0", "other": {"G_NZL_BEL": "1-0"}, "draw_odds": 2.95}
+  ]
+}
