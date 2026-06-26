@@ -236,6 +236,15 @@ def get_live_match_data() -> dict:
         return {}
     
     main_fixture_id, payload_str, ts = res.result_rows[0]
+    
+    # Avoid stale live states from completed or offline simulations.
+    # Discard live score overlay if the last tick was more than 120 seconds ago.
+    from datetime import timezone
+    ts_aware = ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+    now_utc = datetime.now(timezone.utc)
+    if (now_utc - ts_aware).total_seconds() > 120:
+        return {}
+        
     try:
         payload = json.loads(payload_str)
     except Exception:
