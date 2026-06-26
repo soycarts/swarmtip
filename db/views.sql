@@ -9,11 +9,13 @@ SELECT task_id,
        argMaxIf(assignee, ts, assignee != '')    AS assigned_to,
        argMinIf(actor, ts, event_type IN ('created', 'started')) AS created_by,
        argMaxIf(actor, ts, event_type = 'completed')             AS completed_by,
+       argMaxIf(actor, ts, event_type IN ('completed', 'failed', 'cancelled')) AS resolved_by,
        argMaxIf(fixture_id, ts, fixture_id != '') AS fixture_id,
        argMaxIf(depends_on, ts, notEmpty(depends_on)) AS depends_on,
        argMaxIf(title, ts, title != '')      AS title,
        argMaxIf(result, ts, result != '{}')     AS result,
        min(ts)                AS created_at,
+       argMaxIf(ts, ts, event_type IN ('completed', 'failed', 'cancelled')) AS resolved_at,
        max(ts)                AS updated_at
 FROM task_events
 GROUP BY task_id;

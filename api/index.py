@@ -36,14 +36,33 @@ def get_board():
     return tasks
 
 @app.get("/api/tasks")
-def get_tasks():
+def get_tasks(page: int = 1, limit: int = 10):
     ch = client()
-    # Query tasks_current so we have task_id
-    res = ch.query("SELECT task_id, status, kind, task_type, assigned_to, title, updated_at FROM tasks_current ORDER BY updated_at DESC LIMIT 50")
+    offset = (page - 1) * limit
+    
+    # Get total count
+    count_res = ch.query("SELECT count() FROM tasks_current")
+    total_count = count_res.result_rows[0][0]
+    
+    # Query tasks
+    query = f"""
+        SELECT task_id, status, kind, task_type, assigned_to, title, 
+               created_by, resolved_by, created_at, resolved_at, updated_at 
+        FROM tasks_current 
+        ORDER BY created_at DESC 
+        LIMIT {limit} OFFSET {offset}
+    """
+    res = ch.query(query)
     tasks = []
     cols = res.column_names
     for row in res.result_rows:
         d = dict(zip(cols, row))
+        
+        # Clean up default epoch DateTime values from ClickHouse (e.g., 1970-01-01)
+        resolved_at_val = d.get("resolved_at")
+        if resolved_at_val and resolved_at_val.year <= 1970:
+            resolved_at_val = None
+            
         tasks.append({
             "id": d["task_id"],
             "status": d["status"],
@@ -51,9 +70,19 @@ def get_tasks():
             "type": d["task_type"],
             "assigned": d["assigned_to"],
             "title": d["title"],
+            "created_by": d.get("created_by") or "unknown",
+            "resolved_by": d.get("resolved_by") if d.get("resolved_by") else None,
+            "created_at": d["created_at"].isoformat() if d.get("created_at") else None,
+            "resolved_at": resolved_at_val.isoformat() if resolved_at_val else None,
             "updated_at": d["updated_at"].isoformat() if d.get("updated_at") else None
         })
-    return tasks
+        
+    return {
+        "tasks": tasks,
+        "total": total_count,
+        "page": page,
+        "limit": limit
+    }
 
 @app.get("/api/signals")
 def get_signals():
