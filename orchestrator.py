@@ -10,9 +10,9 @@ from core import qualification
 def handle_assess(task: dict):
     fx = task["fixture_id"]
     assess_id = task["task_id"]
-    ground_id = core.tasks.spawn(assess_id, "agent", "ground", fixture_id=fx, actor="context", title=f"Ground context for {fx}")
-    qualify_id = core.tasks.spawn(assess_id, "agent", "qualify", fixture_id=fx, actor="QualificationEngine", title=f"Derive qualification for {fx}")
-    core.tasks.create("agent", "strategy", fixture_id=fx, actor="strategy", depends_on=[ground_id, qualify_id], title=f"Evaluate strategy for {fx}")
+    ground_id = core.tasks.spawn(assess_id, "agent", "ground", fixture_id=fx, actor="orchestrator", assignee="context", title=f"Ground context for {fx}")
+    qualify_id = core.tasks.spawn(assess_id, "agent", "qualify", fixture_id=fx, actor="orchestrator", assignee="QualificationEngine", title=f"Derive qualification for {fx}")
+    core.tasks.create("agent", "strategy", fixture_id=fx, actor="orchestrator", assignee="strategy", depends_on=[ground_id, qualify_id], title=f"Evaluate strategy for {fx}")
     return {"status": "spawned_children"}
 
 HANDLERS = {

@@ -41,7 +41,8 @@ def run(mode="sim"):
             kind="agent",
             task_type="assess",
             fixture_id=fixture_id,
-            actor="orchestrator",
+            actor="feed",
+            assignee="orchestrator",
             title=f"Assess fixture {fixture_id} at {minute}'",
             payload=payload
         )

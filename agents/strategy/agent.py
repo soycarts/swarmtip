@@ -51,10 +51,9 @@ object: {{"draw_prob": <0..1>, "rationale": "<one sentence>", "play_for_draw": t
     data = json.loads(text)
     
     # spawn price task
-    core.tasks.spawn(task["task_id"], "agent", "price", fixture_id=fixture_id, actor="pricing", payload={
-        "match_class": match_class,
+    core.tasks.spawn(task["task_id"], "agent", "price", fixture_id=fixture_id, actor="strategy", assignee="pricing", payload={
         "model_draw_prob": data["draw_prob"],
-        "rationale": data["rationale"]
+        "play_for_draw": data["play_for_draw"]
     }, title=f"Price draw odds for {fixture_id}")
     
     return data

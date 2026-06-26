@@ -34,6 +34,6 @@ def handle(task: dict):
               column_names=list(signal.keys()))
               
     if edge >= config.EDGE_MIN:
-        core.tasks.spawn(task["task_id"], "agent", "publish", fixture_id=fixture_id, actor="publisher", title=f"Publish value signal for {fixture_id}")
+        core.tasks.spawn(task["task_id"], "agent", "publish", fixture_id=fixture_id, actor="pricing", assignee="publisher", title=f"Publish value signal for {fixture_id}")
         
     return {"edge": edge, "recommendation": rec}

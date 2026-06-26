@@ -31,16 +31,16 @@ TERMINAL = {"completed", "failed", "cancelled"}
 from core.db import client
 
 
-_COLUMNS = ["task_id", "event_type", "kind", "task_type", "actor",
+_COLUMNS = ["task_id", "event_type", "kind", "task_type", "actor", "assignee",
             "fixture_id", "depends_on", "parent_task", "title", "payload", "result"]
 
 
 def _emit(task_id: str, event_type: str, *, kind: str = "agent", task_type: str = "",
-          actor: str = "", fixture_id: str = "", depends_on: list[str] | None = None,
+          actor: str = "", assignee: str = "", fixture_id: str = "", depends_on: list[str] | None = None,
           parent_task: str = "", title: str = "",
           payload: Any = None, result: Any = None) -> str:
     """Append one event to the ledger. event_id and ts use their column defaults."""
-    row = [task_id, event_type, kind, task_type, actor,
+    row = [task_id, event_type, kind, task_type, actor, assignee,
            fixture_id, depends_on or [], parent_task, title,
            json.dumps(payload or {}), json.dumps(result or {})]
     client().insert(TABLE, [row], column_names=_COLUMNS)
@@ -55,10 +55,10 @@ def _new_id(task_type: str) -> str:
 
 def create(kind: str, task_type: str, *, title: str = "", fixture_id: str = "",
            depends_on: list[str] | None = None, parent: str = "",
-           actor: str = "", payload: Any = None) -> str:
+           actor: str = "", assignee: str = "", payload: Any = None) -> str:
     """Create a claimable task (status 'created'). Returns the task_id."""
     tid = _new_id(task_type)
-    return _emit(tid, "created", kind=kind, task_type=task_type, actor=actor,
+    return _emit(tid, "created", kind=kind, task_type=task_type, actor=actor, assignee=assignee,
                  fixture_id=fixture_id, depends_on=depends_on, parent_task=parent,
                  title=title, payload=payload)
 
@@ -74,19 +74,19 @@ def complete(task_id: str, actor: str, result: Any = None) -> str:
 
 
 def spawn(parent: str, kind: str, task_type: str, *, fixture_id: str = "",
-          title: str = "", actor: str = "", payload: Any = None) -> str:
+          title: str = "", actor: str = "", assignee: str = "", payload: Any = None) -> str:
     """Create a child task that depends on `parent`. Returns the new task_id."""
     return create(kind, task_type, title=title, fixture_id=fixture_id,
-                  depends_on=[parent], parent=parent, actor=actor, payload=payload)
+                  depends_on=[parent], parent=parent, actor=actor, assignee=assignee, payload=payload)
 
 
 # --- extras ---------------------------------------------------------------------------
 
-def open_task(kind: str, task_type: str, *, title: str = "", actor: str = "",
+def open_task(kind: str, task_type: str, *, title: str = "", actor: str = "", assignee: str = "",
               fixture_id: str = "", depends_on: list[str] | None = None) -> str:
     """Create a task already in progress ('started'). For an actor beginning work now."""
     tid = _new_id(task_type)
-    return _emit(tid, "started", kind=kind, task_type=task_type, actor=actor,
+    return _emit(tid, "started", kind=kind, task_type=task_type, actor=actor, assignee=assignee,
                  fixture_id=fixture_id, depends_on=depends_on, title=title)
 
 
@@ -107,7 +107,9 @@ SELECT task_id,
        argMax(event_type, ts) AS status,
        argMax(kind, ts)       AS kind,
        argMaxIf(task_type, ts, task_type != '')  AS task_type,
-       argMaxIf(actor, ts, actor != '')      AS assigned_to,
+       argMaxIf(assignee, ts, assignee != '')      AS assigned_to,
+       argMinIf(actor, ts, event_type IN ('created', 'started')) AS created_by,
+       argMaxIf(actor, ts, event_type = 'completed')             AS completed_by,
        argMaxIf(fixture_id, ts, fixture_id != '') AS fixture_id,
        argMaxIf(depends_on, ts, notEmpty(depends_on)) AS depends_on,
        argMaxIf(title, ts, title != '')      AS title,
@@ -183,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--result", default="{}", help="JSON string")
 
     a = sub.add_parser("assign", help="create a task for another actor")
+    a.add_argument("--actor", required=True, help="who is assigning this task")
     a.add_argument("--to", required=True)
     a.add_argument("--kind", default="coding", choices=["coding", "agent"])
     a.add_argument("--type", required=True, dest="task_type")
@@ -200,14 +203,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "start":
         deps = [x for x in args.depends.split(",") if x]
         print(open_task(args.kind, args.task_type, title=args.title,
-                        actor=args.actor, fixture_id=args.fixture, depends_on=deps))
+                        actor=args.actor, assignee=args.actor, fixture_id=args.fixture, depends_on=deps))
     elif args.cmd == "done":
         complete(args.task_id, args.actor, result=json.loads(args.result))
         print(f"closed {args.task_id}")
     elif args.cmd == "assign":
         deps = [args.after] if args.after else None
         print(create(args.kind, args.task_type, title=args.title,
-                     actor=args.to, depends_on=deps, parent=args.after))
+                     actor=args.actor, assignee=args.to, depends_on=deps, parent=args.after))
     elif args.cmd == "list":
         rows = current()
         if args.mine:
